@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "compilerPath": "/usr/bin/aarch64-linux-gnu-g++",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/include/aarch64-linux-gnu/qt5",
+                "/usr/include/aarch64-linux-gnu/qt5/QtCore",
+                "/usr/include/aarch64-linux-gnu/qt5/QtGui",
+                "/usr/include/aarch64-linux-gnu/qt5/QtWidgets"
+            ],
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-arm64"
+        }
+    ],
+    "version": 4
+}
