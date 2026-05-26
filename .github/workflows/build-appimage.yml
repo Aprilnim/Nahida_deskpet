@@ -8,7 +8,6 @@ on:
 
 env:
   APP_NAME: "Nahida-DesktopPet"
-  APP_VERSION: "1.0.0"
 
 jobs:
   build:
@@ -32,11 +31,24 @@ jobs:
             libfuse2 \
             file
 
+      - name: Set version from tag or branch
+        id: version
+        run: |
+          REF="${GITHUB_REF_NAME}"
+          # Strip leading 'v' from version tags
+          VERSION="${REF#v}"
+          [ "$VERSION" = "main" ] && VERSION="dev"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Building version: ${VERSION}"
+
       - name: Build the application
         run: |
+          VERSION="${{ steps.version.outputs.version }}"
           mkdir -p build
           cd build
-          qmake ../desktop_pet.pro "DEFINES+=PROJECT_ROOT=\\\"/opt/desktop_pet\\\""
+          qmake ../desktop_pet.pro \
+            "DEFINES+=PROJECT_ROOT=\\\"/usr/bin\\\"" \
+            "DEFINES+=APP_VERSION=\\\"${VERSION}\\\""
           make -j$(nproc)
 
       - name: Prepare AppDir layout
@@ -46,18 +58,17 @@ jobs:
           mkdir -p "${APPDIR}/usr/bin"
           mkdir -p "${APPDIR}/usr/share/applications"
           mkdir -p "${APPDIR}/usr/share/icons/hicolor/256x256/apps"
-          mkdir -p "${APPDIR}/usr/share/metainfo"
 
           # Copy executable
           cp build/desktop_pet "${APPDIR}/usr/bin/"
 
-          # Copy resources (img/)
-          cp -r img "${APPDIR}/usr/"
+          # Copy resources (img/) alongside executable
+          cp -r img "${APPDIR}/usr/bin/"
 
           # Copy .desktop file
           cp packaging/desktop-pet.desktop "${APPDIR}/usr/share/applications/"
 
-          # Copy icon as app icon (use icon.png as app icon)
+          # Copy icon
           cp img/icon.png "${APPDIR}/usr/share/icons/hicolor/256x256/apps/desktop-pet.png"
 
           # Copy AppRun
@@ -66,7 +77,6 @@ jobs:
 
       - name: Download linuxdeploy and its Qt plugin
         run: |
-          # Download linuxdeploy
           wget -q -O linuxdeploy "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
           wget -q -O linuxdeploy-plugin-qt "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage"
           chmod +x linuxdeploy linuxdeploy-plugin-qt
@@ -74,38 +84,41 @@ jobs:
       - name: Build AppImage
         run: |
           export PATH="${PWD}:${PATH}"
-          export LDAI_OUTPUT="${APP_NAME}-${APP_VERSION}-x86_64.AppImage"
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          VERSION="${{ steps.version.outputs.version }}"
+          export LDAI_OUTPUT="${APP_NAME}-${VERSION}-x86_64.AppImage"
+          echo "Output: ${LDAI_OUTPUT}"
 
-          # Run linuxdeploy with Qt plugin
           ./linuxdeploy \
             --appdir appdir \
             --plugin qt \
             --output appimage \
             --desktop-file appdir/usr/share/applications/desktop-pet.desktop \
-            --icon-file appdir/usr/share/icons/hicolor/256x256/apps/desktop-pet.png
+            --icon-file appdir/usr/share/icons/hicolor/256x256/apps/desktop-pet.png \
+            --log-target stdout
 
       - name: Upload AppImage as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ env.APP_NAME }}-${{ env.APP_VERSION }}-x86_64"
-          path: "${{ env.APP_NAME }}-${{ env.APP_VERSION }}-x86_64.AppImage"
+          name: "${{ env.APP_NAME }}-${{ steps.version.outputs.version }}-x86_64"
+          path: "${{ env.APP_NAME }}-${{ steps.version.outputs.version }}-x86_64.AppImage"
 
       - name: Create GitHub Release (on tag push)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: "${{ env.APP_NAME }}-${{ env.APP_VERSION }}-x86_64.AppImage"
+          files: "${{ env.APP_NAME }}-${{ steps.version.outputs.version }}-x86_64.AppImage"
           generate_release_notes: true
           body: |
-            ## 🐾 桌面宠物 v${{ env.APP_VERSION }}
+            ## 🐾 桌面宠物 v${{ steps.version.outputs.version }}
 
             ### 📦 下载
-            - `${{ env.APP_NAME }}-${{ env.APP_VERSION }}-x86_64.AppImage` — Linux x86_64 通用格式
+            - `${{ env.APP_NAME }}-${{ steps.version.outputs.version }}-x86_64.AppImage` — Linux x86_64 通用格式
 
             ### 🚀 使用方法
             ```bash
-            chmod +x Nahida-DesktopPet-*-x86_64.AppImage
-            ./Nahida-DesktopPet-*-x86_64.AppImage
+            chmod +x ${{ env.APP_NAME }}-${{ steps.version.outputs.version }}-x86_64.AppImage
+            ./${{ env.APP_NAME }}-${{ steps.version.outputs.version }}-x86_64.AppImage
             ```
 
             ### ✨ 功能
