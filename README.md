@@ -2,6 +2,28 @@
 
 基于 **Qt5** 开发的桌面伙伴应用，使用帧动画在桌面上展示一个可爱的宠物角色。
 
+## 📦 快速下载
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/Aprilnim/Nahida_deskpet/releases/latest">
+        <img src="https://img.shields.io/github/v/release/Aprilnim/Nahida_deskpet?label=%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC&color=66bb6a" alt="Latest Release">
+      </a>
+    </td>
+    <td>
+      <b>AppImage</b> — Linux x86_64 通用格式，无需安装 Qt，<b>下载即用</b>
+    </td>
+  </tr>
+</table>
+
+1. 前往 [Releases 页面](https://github.com/Aprilnim/Nahida_deskpet/releases/latest) 下载 `.AppImage` 文件
+2. 赋予执行权限：`chmod +x Nahida-DesktopPet-*.AppImage`
+3. 双击运行或终端执行：`./Nahida-DesktopPet-*.AppImage`
+
+> 💡 AppImage 由 GitHub Actions CI 自动构建，每次发布新版本时自动生成。
+
+
 ## 📸 截图
 
 <div align="center">
@@ -53,11 +75,30 @@ desktop_pet/
 │   ├── sayHello/           # "打招呼" 动画帧（28 张 PNG）
 │   ├── swing/              # "摇摆" 动画帧
 │   └── sleep/              # "睡觉" 动画帧（25 张 PNG）
+├── packaging/               # AppImage 打包所需的文件
+│   ├── AppRun               #   AppImage 入口脚本
+│   └── desktop-pet.desktop  #   .desktop 启动器文件
+├── .github/
+│   └── workflows/
+│       └── build-appimage.yml  # GitHub Actions CI 自动构建 AppImage
 ├── plans/                  # 规划文档
 └── README.md
 ```
 
 ## 🛠️ 构建与运行
+### 📥 下载 AppImage（推荐）
+
+从 [Releases 页面](https://github.com/Aprilnim/Nahida_deskpet/releases/latest) 下载 AppImage 文件，无需安装任何依赖：
+
+```bash
+chmod +x Nahida-DesktopPet-*-x86_64.AppImage
+./Nahida-DesktopPet-*-x86_64.AppImage
+```
+
+AppImage 由 GitHub Actions 自动构建，打包了所有运行时依赖（Qt 库、动画资源等）。
+
+### 🔨 从源码编译
+
 
 ### 环境要求
 

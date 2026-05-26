@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=桌面宠物
+Name[en]=Desktop Pet
+Comment=一只停留在桌面上的可爱宠物
+Comment[en]=A cute pet that stays on your desktop
+Exec=desktop_pet
+Icon=desktop-pet
+Type=Application
+Categories=Utility;
+Terminal=false

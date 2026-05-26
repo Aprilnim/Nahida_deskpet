@@ -1,0 +1,117 @@
+name: Build AppImage
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+env:
+  APP_NAME: "Nahida-DesktopPet"
+  APP_VERSION: "1.0.0"
+
+jobs:
+  build:
+    name: Build & Package AppImage
+    runs-on: ubuntu-22.04   # x86_64 — match our Qt 5.15 target
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            qtbase5-dev \
+            qttools5-dev \
+            qttools5-dev-tools \
+            qt5-qmake \
+            libgl1-mesa-dev \
+            libfuse2 \
+            file
+
+      - name: Build the application
+        run: |
+          mkdir -p build
+          cd build
+          qmake ../desktop_pet.pro "DEFINES+=PROJECT_ROOT=\\\"/opt/desktop_pet\\\""
+          make -j$(nproc)
+
+      - name: Prepare AppDir layout
+        run: |
+          # Create AppDir structure
+          APPDIR="appdir"
+          mkdir -p "${APPDIR}/usr/bin"
+          mkdir -p "${APPDIR}/usr/share/applications"
+          mkdir -p "${APPDIR}/usr/share/icons/hicolor/256x256/apps"
+          mkdir -p "${APPDIR}/usr/share/metainfo"
+
+          # Copy executable
+          cp build/desktop_pet "${APPDIR}/usr/bin/"
+
+          # Copy resources (img/)
+          cp -r img "${APPDIR}/usr/"
+
+          # Copy .desktop file
+          cp packaging/desktop-pet.desktop "${APPDIR}/usr/share/applications/"
+
+          # Copy icon as app icon (use icon.png as app icon)
+          cp img/icon.png "${APPDIR}/usr/share/icons/hicolor/256x256/apps/desktop-pet.png"
+
+          # Copy AppRun
+          cp packaging/AppRun "${APPDIR}/"
+          chmod +x "${APPDIR}/AppRun"
+
+      - name: Download linuxdeploy and its Qt plugin
+        run: |
+          # Download linuxdeploy
+          wget -q -O linuxdeploy "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+          wget -q -O linuxdeploy-plugin-qt "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage"
+          chmod +x linuxdeploy linuxdeploy-plugin-qt
+
+      - name: Build AppImage
+        run: |
+          export PATH="${PWD}:${PATH}"
+          export LDAI_OUTPUT="${APP_NAME}-${APP_VERSION}-x86_64.AppImage"
+
+          # Run linuxdeploy with Qt plugin
+          ./linuxdeploy \
+            --appdir appdir \
+            --plugin qt \
+            --output appimage \
+            --desktop-file appdir/usr/share/applications/desktop-pet.desktop \
+            --icon-file appdir/usr/share/icons/hicolor/256x256/apps/desktop-pet.png
+
+      - name: Upload AppImage as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.APP_VERSION }}-x86_64"
+          path: "${{ env.APP_NAME }}-${{ env.APP_VERSION }}-x86_64.AppImage"
+
+      - name: Create GitHub Release (on tag push)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "${{ env.APP_NAME }}-${{ env.APP_VERSION }}-x86_64.AppImage"
+          generate_release_notes: true
+          body: |
+            ## 🐾 桌面宠物 v${{ env.APP_VERSION }}
+
+            ### 📦 下载
+            - `${{ env.APP_NAME }}-${{ env.APP_VERSION }}-x86_64.AppImage` — Linux x86_64 通用格式
+
+            ### 🚀 使用方法
+            ```bash
+            chmod +x Nahida-DesktopPet-*-x86_64.AppImage
+            ./Nahida-DesktopPet-*-x86_64.AppImage
+            ```
+
+            ### ✨ 功能
+            - 👋 SayHello — 打招呼动画
+            - 🎠 Swing — 摇摆动画（双向平滑循环）
+            - 😴 Sleep — 睡觉动画（2分钟无操作自动进入）
+            - 🖱️ 点击/拖拽交互
+            - 🖥️ 系统托盘唤起 deepy AI 助手
+            - 🧹 一键释放系统内存

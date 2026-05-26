@@ -9,6 +9,7 @@
 #include <QIcon>
 #include <QMessageBox>
 #include <QStandardPaths>
+#include <QCoreApplication>
 #include <QContextMenuEvent>
 #include <QApplication>
 #include <algorithm>
@@ -92,10 +93,28 @@ MainWindow::MainWindow(QWidget *parent)
     setupTrayIcon();
 }
 
+static QString findResourceDir()
+{
+    // First try: development path (PROJECT_ROOT from compile-time)
+    QDir devDir(PROJECT_ROOT);
+    if (devDir.exists("img/sayHello"))
+        return devDir.absolutePath();
+
+    // Second try: relative to executable (for AppImage / standalone deployment)
+    QDir exeDir(QCoreApplication::applicationDirPath());
+    if (exeDir.exists("img/sayHello"))
+        return exeDir.absolutePath();
+
+    // Fallback: PROJECT_ROOT
+    return devDir.absolutePath();
+}
+
 void MainWindow::loadAnimationFrames()
 {
-    auto loadFramesFromDir = [this](const QString &relDirPath, QVector<QPixmap> &targetFrames) {
-        const QString fullPath = QDir(PROJECT_ROOT).filePath(relDirPath);
+    const QString resourceDir = findResourceDir();
+
+    auto loadFramesFromDir = [this, &resourceDir](const QString &relDirPath, QVector<QPixmap> &targetFrames) {
+        const QString fullPath = QDir(resourceDir).filePath(relDirPath);
         QDir dir(fullPath);
         QStringList filters;
         filters << "*.png";
@@ -268,7 +287,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::setupTrayIcon()
 {
-    const QString iconPath = QDir(PROJECT_ROOT).filePath("img/icon.png");
+    const QString iconPath = QDir(findResourceDir()).filePath("img/icon.png");
     QIcon icon(iconPath);
 
     if (icon.isNull())

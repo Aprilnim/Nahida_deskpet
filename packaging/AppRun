@@ -1,0 +1,10 @@
+#!/bin/bash
+# AppRun — AppImage entry point
+# Makes the program find its resources relative to the AppImage mount point
+
+APPDIR="$(dirname "$(readlink -f "$0")")"
+export PATH="${APPDIR}/usr/bin:${PATH}"
+export LD_LIBRARY_PATH="${APPDIR}/usr/lib:${LD_LIBRARY_PATH}"
+export QT_PLUGIN_PATH="${APPDIR}/usr/plugins"
+
+exec "${APPDIR}/usr/bin/desktop_pet"
